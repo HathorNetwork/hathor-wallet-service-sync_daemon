@@ -91,7 +91,7 @@ export interface SyncSchema {
     syncing: {};
     failure: {};
     reorg: {};
-  }
+  };
 }
 
 export interface SyncContext {
@@ -111,51 +111,60 @@ export interface HandlerEvent {
   type: string;
 }
 
-export type StatusEvent = {
-  type: 'finished';
-  success: boolean;
-  message?: string;
-} | {
-  type: 'block_success';
-  success: boolean;
-  height?: number;
-  blockId: string;
-  message?: string;
-  transactions: string[];
-} | {
-  type: 'transaction_failure';
-  success: boolean;
-  message?: string;
-} | {
-  type: 'reorg';
-  success: boolean;
-  message?: string;
-} | {
-  type: 'error';
-  success: boolean;
-  message?: string;
-  error?: string;
-}
+export type StatusEvent =
+  | {
+      type: 'finished';
+      success: boolean;
+      message?: string;
+    }
+  | {
+      type: 'block_success';
+      success: boolean;
+      height?: number;
+      blockId: string;
+      message?: string;
+      transactions: string[];
+    }
+  | {
+      type: 'transaction_failure';
+      success: boolean;
+      message?: string;
+    }
+  | {
+      type: 'reorg';
+      success: boolean;
+      message?: string;
+    }
+  | {
+      type: 'error';
+      success: boolean;
+      message?: string;
+      error?: string;
+    };
 
-export type MempoolEvent = {
-  type: 'finished';
-  success: boolean;
-  message?: string;
-} | {
-  type: 'tx_success';
-  success: boolean;
-  txId: string;
-  message?: string;
-} | {
-  type: 'wait';
-  success: boolean;
-  message?: string;
-} | {
-  type: 'error';
-  success: boolean;
-  message?: string;
-  error?: string;
-}
+export type MempoolEvent =
+  | {
+      type: 'finished';
+      success: boolean;
+      message?: string;
+    }
+  | {
+      type: 'tx_success';
+      success: boolean;
+      txId: string;
+      message?: string;
+    }
+  | {
+      type: 'wait';
+      success: boolean;
+      message?: string;
+    }
+  | {
+      type: 'error';
+      success: boolean;
+      message?: string;
+      error?: string;
+    };
 
 /* export interface StatusEvent {
   type: string;

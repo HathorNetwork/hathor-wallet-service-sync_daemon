@@ -23,13 +23,13 @@ test('SyncMachine should start as idle', async () => {
   expect(syncMachine.state.value).toStrictEqual('idle');
 }, 100);
 
-test('An idle SyncMachine should transition to \'syncing\' when a NEW_BLOCK action is received', async () => {
+test("An idle SyncMachine should transition to 'syncing' when a NEW_BLOCK action is received", async () => {
   const TestSyncMachine = SyncMachine.withConfig({
     services: {
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -40,13 +40,13 @@ test('An idle SyncMachine should transition to \'syncing\' when a NEW_BLOCK acti
   expect(syncMachine.state.value).toStrictEqual('syncing');
 }, 500);
 
-test('A SyncMachine in the syncing state should transition to \'failure\' when an ERROR event is received', async () => {
+test("A SyncMachine in the syncing state should transition to 'failure' when an ERROR event is received", async () => {
   const TestSyncMachine = SyncMachine.withConfig({
     services: {
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -67,7 +67,7 @@ test('A SyncMachine in the syncing state should store hasMoreBlocks on context i
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -84,13 +84,13 @@ test('A SyncMachine in the syncing state should store hasMoreBlocks on context i
   expect(syncMachine.state.context.hasMoreBlocks).toStrictEqual(true);
 }, 500);
 
-test('A SyncMachine should transition to \'idle\' when it is on \'syncing\' state and received \'DONE\'', async () => {
+test("A SyncMachine should transition to 'idle' when it is on 'syncing' state and received 'DONE'", async () => {
   const TestSyncMachine = SyncMachine.withConfig({
     services: {
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -107,13 +107,13 @@ test('A SyncMachine should transition to \'idle\' when it is on \'syncing\' stat
   expect(syncMachine.state.value).toStrictEqual('idle');
 }, 500);
 
-test('A SyncMachine should transition to \'syncing\' if hasMoreBlocks context is true on IDLE state entry', async () => {
+test("A SyncMachine should transition to 'syncing' if hasMoreBlocks context is true on IDLE state entry", async () => {
   const TestSyncMachine = SyncMachine.withConfig({
     services: {
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -132,16 +132,15 @@ test('A SyncMachine should transition to \'syncing\' if hasMoreBlocks context is
   syncMachine.send({ type: 'DONE' });
 
   expect(syncMachine.state.value).toStrictEqual('syncing');
-
 }, 500);
 
-test('A SyncMachine should clear hasMoreBlocks from context when transitioning to \'syncing\'', async () => {
+test("A SyncMachine should clear hasMoreBlocks from context when transitioning to 'syncing'", async () => {
   const TestSyncMachine = SyncMachine.withConfig({
     services: {
       syncHandler: () => () => {
         return () => {};
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -164,7 +163,6 @@ test('A SyncMachine should clear hasMoreBlocks from context when transitioning t
   expect(syncMachine.state.value).toStrictEqual('syncing');
 
   expect(syncMachine.state.context.hasMoreBlocks).toStrictEqual(false);
-
 }, 500);
 
 test('A SyncMachine should call the cleanupFn on the syncHandler service when state is transitioned out of syncing', async () => {
@@ -175,7 +173,7 @@ test('A SyncMachine should call the cleanupFn on the syncHandler service when st
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -216,7 +214,7 @@ test('A SyncMachine should call the cleanupFn on the syncHandler service when st
   expect(mockCleanupFunction).toHaveBeenCalledTimes(3);
 }, 500);
 
-test('The SyncMachine should transition to \'reorg\' state when a reorg is detected', async () => {
+test("The SyncMachine should transition to 'reorg' state when a reorg is detected", async () => {
   const mockCleanupFunction = jest.fn();
 
   const TestSyncMachine = SyncMachine.withConfig({
@@ -224,7 +222,7 @@ test('The SyncMachine should transition to \'reorg\' state when a reorg is detec
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -243,7 +241,7 @@ test('The SyncMachine should transition to \'reorg\' state when a reorg is detec
   expect(syncMachine.state.value).toStrictEqual('reorg');
 }, 500);
 
-test('Mempool: transition to \'idle\' on ERROR event', async () => {
+test("Mempool: transition to 'idle' on ERROR event", async () => {
   const mockCleanupFunction = jest.fn();
 
   const TestSyncMachine = SyncMachine.withConfig({
@@ -251,7 +249,7 @@ test('Mempool: transition to \'idle\' on ERROR event', async () => {
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -266,7 +264,7 @@ test('Mempool: transition to \'idle\' on ERROR event', async () => {
   expect(syncMachine.state.value).toStrictEqual('idle');
 }, 500);
 
-test('Mempool: transition to \'idle\' on DONE event', async () => {
+test("Mempool: transition to 'idle' on DONE event", async () => {
   const mockCleanupFunction = jest.fn();
 
   const TestSyncMachine = SyncMachine.withConfig({
@@ -274,7 +272,7 @@ test('Mempool: transition to \'idle\' on DONE event', async () => {
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -289,7 +287,7 @@ test('Mempool: transition to \'idle\' on DONE event', async () => {
   expect(syncMachine.state.value).toStrictEqual('idle');
 }, 500);
 
-test('Mempool: transition to \'idle\' on STOP event', async () => {
+test("Mempool: transition to 'idle' on STOP event", async () => {
   const mockCleanupFunction = jest.fn();
 
   const TestSyncMachine = SyncMachine.withConfig({
@@ -297,7 +295,7 @@ test('Mempool: transition to \'idle\' on STOP event', async () => {
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore
@@ -312,7 +310,7 @@ test('Mempool: transition to \'idle\' on STOP event', async () => {
   expect(syncMachine.state.value).toStrictEqual('idle');
 }, 500);
 
-test('Mempool: transition to \'syncing\' on NEW_BLOCK event and back to \'mempoolsync\' when DONE with block sync', async () => {
+test("Mempool: transition to 'syncing' on NEW_BLOCK event and back to 'mempoolsync' when DONE with block sync", async () => {
   const mockCleanupFunction = jest.fn();
 
   const TestSyncMachine = SyncMachine.withConfig({
@@ -320,7 +318,7 @@ test('Mempool: transition to \'syncing\' on NEW_BLOCK event and back to \'mempoo
       syncHandler: () => () => {
         return mockCleanupFunction;
       },
-    }
+    },
   });
 
   // @ts-ignore

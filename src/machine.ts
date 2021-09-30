@@ -5,11 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {
-  Machine,
-  assign,
-  send,
-} from 'xstate';
+import { Machine, assign, send } from 'xstate';
 import { syncToLatestBlock, syncLatestMempool } from './utils';
 import {
   GeneratorYieldResult,
@@ -33,7 +29,7 @@ export const syncHandler = () => (callback, onReceive) => {
 
       if (done) {
         // The generator reached its end, we should end this handler
-        logger.debug('Done.', value)
+        logger.debug('Done.', value);
         break;
       }
 
@@ -53,9 +49,13 @@ export const syncHandler = () => (callback, onReceive) => {
         logger.info('Sync generator finished.');
         callback('DONE');
       } else if (value.type === 'block_success') {
-        logger.info(`Block id: ${value.blockId} sent successfully, transactions sent: ${value.transactions.length}`);
+        logger.info(
+          `Block id: ${value.blockId} sent successfully, transactions sent: ${value.transactions.length}`
+        );
       } else {
-        logger.warn(`Unhandled type received from sync generator: ${value.type}`);
+        logger.warn(
+          `Unhandled type received from sync generator: ${value.type}`
+        );
       }
     }
 
@@ -93,7 +93,7 @@ export const mempoolHandler = () => (callback, onReceive) => {
 
       if (done) {
         // The generator reached its end, we should end this handler
-        logger.debug('Done.', value)
+        logger.debug('Done.', value);
         break;
       }
 
@@ -110,7 +110,9 @@ export const mempoolHandler = () => (callback, onReceive) => {
       } else if (value.type === 'tx_success') {
         logger.info('Mempool tx synced!');
       } else {
-        logger.warn(`Unhandled type received from sync generator: ${value.type}`);
+        logger.warn(
+          `Unhandled type received from sync generator: ${value.type}`
+        );
       }
     }
 
@@ -132,126 +134,134 @@ export const mempoolHandler = () => (callback, onReceive) => {
 /* See README for an explanation on how the machine works.
  * TODO: We need to type the Event
  */
-export const SyncMachine = Machine<SyncContext, SyncSchema>({
-  id: 'sync',
-  initial: 'idle',
-  context: {
-    hasMoreBlocks: false,
-    hasMempoolUpdate: false,
+export const SyncMachine = Machine<SyncContext, SyncSchema>(
+  {
+    id: 'sync',
+    initial: 'idle',
+    context: {
+      hasMoreBlocks: false,
+      hasMempoolUpdate: false,
+    },
+    states: {
+      idle: {
+        always: [
+          // Conditions are tested in order, the first valid one is taken, if any are valid
+          // https://xstate.js.org/docs/guides/guards.html#multiple-guards
+          { target: 'syncing', cond: 'hasMoreBlocks' },
+          { target: 'mempoolsync', cond: 'hasMempoolUpdate' },
+        ],
+        on: {
+          NEW_BLOCK: 'syncing',
+          MEMPOOL_UPDATE: 'mempoolsync',
+        },
+      },
+      mempoolsync: {
+        invoke: {
+          id: 'syncLatestMempool',
+          src: 'mempoolHandler',
+        },
+        on: {
+          MEMPOOL_UPDATE: {
+            actions: ['setMempoolUpdate'],
+          },
+          // Stop mempool sync when a block arrives
+          // this means that the mempool may not be fully synced when it leaves this state
+          // giving priority to blocks means the mempool may change between syncs
+          NEW_BLOCK: {
+            target: 'syncing',
+            // When block sync finishes, go back to mempool sync
+            actions: ['setMempoolUpdate'],
+          },
+          STOP: 'idle',
+          DONE: 'idle',
+          // Errors on mempool sync are "ignored" since next sync (either block or mempool) should fix it
+          ERROR: 'idle',
+        },
+        entry: [
+          'resetMempoolUpdate',
+          send('START', {
+            to: 'syncLatestMempool',
+          }),
+        ],
+      },
+      syncing: {
+        invoke: {
+          id: 'syncToLatestBlock',
+          src: 'syncHandler',
+        },
+        on: {
+          NEW_BLOCK: {
+            actions: ['setMoreBlocks'],
+          },
+          STOP: 'idle',
+          DONE: 'idle',
+          ERROR: 'failure',
+          REORG: 'reorg',
+        },
+        entry: [
+          'resetMoreBlocks',
+          send('START', {
+            to: 'syncToLatestBlock',
+          }),
+        ],
+      },
+      reorg: {
+        invoke: {
+          id: 'invokeReorg',
+          src: (_context, _event) => async () => {
+            const response = await invokeReorg();
+
+            if (!response.success) {
+              logger.error(response);
+              throw new Error('Reorg failed');
+            }
+
+            return;
+          },
+          onDone: {
+            target: 'idle',
+          },
+          onError: {
+            target: 'failure',
+          },
+        },
+      },
+      failure: {
+        type: 'final',
+        entry: ['logFailure'],
+      },
+    },
   },
-  states: {
-    idle: {
-      always: [
-        // Conditions are tested in order, the first valid one is taken, if any are valid
-        // https://xstate.js.org/docs/guides/guards.html#multiple-guards
-        { target: 'syncing', cond: 'hasMoreBlocks' },
-        { target: 'mempoolsync', cond: 'hasMempoolUpdate' },
-      ],
-      on: {
-        NEW_BLOCK: 'syncing',
-        MEMPOOL_UPDATE: 'mempoolsync',
-      },
+  {
+    guards: {
+      hasMoreBlocks: ctx => ctx.hasMoreBlocks,
+      hasMempoolUpdate: ctx => ctx.hasMempoolUpdate,
     },
-    mempoolsync: {
-      invoke: {
-        id: 'syncLatestMempool',
-        src: 'mempoolHandler',
+    actions: {
+      // @ts-ignore
+      logFailure: () => {
+        logger.error('[ALERT] Machine transitioned to failure state.');
       },
-      on: {
-        MEMPOOL_UPDATE: {
-          actions: ['setMempoolUpdate'],
-        },
-        // Stop mempool sync when a block arrives
-        // this means that the mempool may not be fully synced when it leaves this state
-        // giving priority to blocks means the mempool may change between syncs
-        NEW_BLOCK: {
-          target: 'syncing',
-          // When block sync finishes, go back to mempool sync
-          actions: ['setMempoolUpdate'],
-        },
-        STOP: 'idle',
-        DONE: 'idle',
-        // Errors on mempool sync are "ignored" since next sync (either block or mempool) should fix it
-        ERROR: 'idle',
-      },
-      entry: [
-        'resetMempoolUpdate',
-        send('START', {
-          to: 'syncLatestMempool',
-        }),
-      ],
+      // @ts-ignore
+      resetMoreBlocks: assign({
+        hasMoreBlocks: () => false,
+      }),
+      // @ts-ignore
+      setMoreBlocks: assign({
+        hasMoreBlocks: () => true,
+      }),
+      // @ts-ignore
+      resetMempoolUpdate: assign({
+        hasMempoolUpdate: () => false,
+      }),
+      // @ts-ignore
+      setMempoolUpdate: assign({
+        hasMempoolUpdate: () => true,
+      }),
     },
-    syncing: {
-      invoke: {
-        id: 'syncToLatestBlock',
-        src: 'syncHandler',
-      },
-      on: {
-        NEW_BLOCK: {
-          actions: ['setMoreBlocks'],
-        },
-        STOP: 'idle',
-        DONE: 'idle',
-        ERROR: 'failure',
-        REORG: 'reorg',
-      },
-      entry: [
-        'resetMoreBlocks',
-        send('START', {
-          to: 'syncToLatestBlock',
-        }),
-      ],
-    },
-    reorg: {
-      invoke: {
-        id: 'invokeReorg',
-        src: (_context, _event) => async () => {
-          const response = await invokeReorg();
-
-          if (!response.success) {
-            logger.error(response);
-            throw new Error('Reorg failed');
-          }
-
-          return;
-        },
-        onDone: {
-          target: 'idle',
-        },
-        onError: {
-          target: 'failure',
-        },
-      }
-    },
-    failure: {
-      type: 'final',
+    services: {
+      syncHandler,
+      mempoolHandler,
     },
   }
-}, {
-  guards: {
-    hasMoreBlocks: (ctx) => ctx.hasMoreBlocks,
-    hasMempoolUpdate: (ctx) => ctx.hasMempoolUpdate,
-  },
-  actions: {
-    // @ts-ignore
-    resetMoreBlocks: assign({
-      hasMoreBlocks: () => false,
-    }),
-    // @ts-ignore
-    setMoreBlocks: assign({
-      hasMoreBlocks: () => true,
-    }),
-    // @ts-ignore
-    resetMempoolUpdate: assign({
-      hasMempoolUpdate: () => false,
-    }),
-    // @ts-ignore
-    setMempoolUpdate: assign({
-      hasMempoolUpdate: () => true,
-    }),
-  },
-  services: {
-    syncHandler,
-    mempoolHandler,
-  },
-});
+);

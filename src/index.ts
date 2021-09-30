@@ -20,7 +20,7 @@ const machine = interpret(SyncMachine).onTransition(state => {
 });
 
 const handleMessage = (message: any) => {
-  switch(message.type) {
+  switch (message.type) {
     case 'dashboard:metrics':
       break;
 
@@ -49,7 +49,9 @@ const handleMessage = (message: any) => {
         machine.send({ type: 'NEW_BLOCK' });
       }
       if (message.state === Connection.CONNECTING) {
-        logger.info(`Websocket is attempting to connect to ${process.env.DEFAULT_SERVER}`);
+        logger.info(
+          `Websocket is attempting to connect to ${process.env.DEFAULT_SERVER}`
+        );
       }
       if (message.state === Connection.CLOSED) {
         logger.error('Websocket connection was closed.');
@@ -65,14 +67,16 @@ const conn = new Connection({
 });
 
 // @ts-ignore
-conn.websocket.on('network', (message) => handleMessage(message));
+conn.websocket.on('network', message => handleMessage(message));
 // @ts-ignore
-conn.on('state', (state) => handleMessage({
-  type: 'state_update',
-  state,
-}));
+conn.on('state', state =>
+  handleMessage({
+    type: 'state_update',
+    state,
+  })
+);
 // @ts-ignore
-conn.websocket.on('connection_error', (evt) => {
+conn.websocket.on('connection_error', evt => {
   logger.error(`Websocket connection error: ${evt.message}`);
 });
 

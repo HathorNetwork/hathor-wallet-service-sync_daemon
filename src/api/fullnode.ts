@@ -18,7 +18,9 @@ import axios from 'axios';
 import { globalCache } from '../utils';
 import logger from '../logger';
 
-const DEFAULT_SERVER = process.env.DEFAULT_SERVER || 'https://node1.foxtrot.testnet.hathor.network/v1a/';
+const DEFAULT_SERVER =
+  process.env.DEFAULT_SERVER ||
+  'https://node1.foxtrot.testnet.hathor.network/v1a/';
 
 /**
  * Returns a transaction from the fullnode
@@ -61,8 +63,12 @@ export const downloadMempool = async () => {
  *
  * @param height - The block's height
  */
-export const downloadBlockByHeight = async (height: number): Promise<FullBlock> => {
-  const response = await axios.get(`${DEFAULT_SERVER}block_at_height?height=${height}`);
+export const downloadBlockByHeight = async (
+  height: number
+): Promise<FullBlock> => {
+  const response = await axios.get(
+    `${DEFAULT_SERVER}block_at_height?height=${height}`
+  );
 
   const data = response.data;
 
@@ -82,9 +88,13 @@ export const downloadBlockByHeight = async (height: number): Promise<FullBlock> 
       const typedDecodedScript: DecodedScript = {
         type: input.decoded.type as string,
         address: input.decoded.address as string,
-        timelock: input.decoded.timelock ? input.decoded.timelock as number : null,
-        value: input.decoded.value ? input.decoded.value as number : null,
-        tokenData: input.decoded.token_data ? input.decoded.token_data as number : null,
+        timelock: input.decoded.timelock
+          ? (input.decoded.timelock as number)
+          : null,
+        value: input.decoded.value ? (input.decoded.value as number) : null,
+        tokenData: input.decoded.token_data
+          ? (input.decoded.token_data as number)
+          : null,
       };
       const typedInput: Input = {
         txId: input.tx_id as string,
@@ -98,25 +108,31 @@ export const downloadBlockByHeight = async (height: number): Promise<FullBlock> 
 
       return typedInput;
     }),
-    outputs: responseBlock.outputs.map((output: RawOutput): Output => {
-      const typedDecodedScript: DecodedScript = {
-        type: output.decoded.type as string,
-        address: output.decoded.address as string,
-        timelock: output.decoded.timelock ? output.decoded.timelock as number : null,
-        value: output.decoded.value ? output.decoded.value as number : null,
-        tokenData: output.decoded.token_data ? output.decoded.token_data as number : null,
-      };
+    outputs: responseBlock.outputs.map(
+      (output: RawOutput): Output => {
+        const typedDecodedScript: DecodedScript = {
+          type: output.decoded.type as string,
+          address: output.decoded.address as string,
+          timelock: output.decoded.timelock
+            ? (output.decoded.timelock as number)
+            : null,
+          value: output.decoded.value ? (output.decoded.value as number) : null,
+          tokenData: output.decoded.token_data
+            ? (output.decoded.token_data as number)
+            : null,
+        };
 
-      const typedOutput: Output = {
-        value: output.value as number,
-        tokenData: output.token_data as number,
-        script: output.script as string,
-        decoded: typedDecodedScript,
-        token: output.token as string,
-      };
+        const typedOutput: Output = {
+          value: output.value as number,
+          tokenData: output.token_data as number,
+          script: output.script as string,
+          decoded: typedDecodedScript,
+          token: output.token as string,
+        };
 
-      return typedOutput;
-    }),
+        return typedOutput;
+      }
+    ),
     parents: responseBlock.parents,
     height: responseBlock.height as number,
   };
@@ -130,7 +146,10 @@ export const downloadBlockByHeight = async (height: number): Promise<FullBlock> 
  * @param txId - The block txId
  * @param noCache - Prevents downloading the block from cache as a reorg may have ocurred
  */
-export const getBlockByTxId = async (txId: string, noCache: boolean = false) => {
+export const getBlockByTxId = async (
+  txId: string,
+  noCache: boolean = false
+) => {
   return downloadTx(txId, noCache);
 };
 
@@ -140,7 +159,9 @@ export const getBlockByTxId = async (txId: string, noCache: boolean = false) => 
  * a specialized API from the full_node to query its best block.
  */
 export const getFullNodeBestBlock = async (): Promise<Block> => {
-  const response = await axios.get(`${DEFAULT_SERVER}transaction?type=block&count=1`);
+  const response = await axios.get(
+    `${DEFAULT_SERVER}transaction?type=block&count=1`
+  );
   const { transactions } = response.data;
 
   const bestBlock: Block = {

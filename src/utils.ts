@@ -31,41 +31,45 @@ import {
   getFullNodeBestBlock,
   downloadBlockByHeight,
 } from './api/fullnode';
-import {
-  getWalletServiceBestBlock,
-  sendTx,
-} from './api/lambda';
+import { getWalletServiceBestBlock, sendTx } from './api/lambda';
 import dotenv from 'dotenv';
 // @ts-ignore
 import { wallet } from '@hathor/wallet-lib';
 import logger from './logger';
-import { isNumber, isNil, get } from 'lodash';
+import { isNumber, isEmpty } from 'lodash';
 
 dotenv.config();
 
 export const IGNORE_TXS: Map<string, string[]> = new Map<string, string[]>([
-  ['mainnet', [
-    '000006cb93385b8b87a545a1cbb6197e6caff600c12cc12fc54250d39c8088fc',
-    '0002d4d2a15def7604688e1878ab681142a7b155cbe52a6b4e031250ae96db0a',
-    '0002ad8d1519daaddc8e1a37b14aac0b045129c01832281fb1c02d873c7abbf9',
-  ]],
-  ['testnet', [
-    '0000033139d08176d1051fb3a272c3610457f0c7f686afbe0afe3d37f966db85',
-    '00e161a6b0bee1781ea9300680913fb76fd0fac4acab527cd9626cc1514abdc9',
-    '00975897028ceb037307327c953f5e7ad4d3f42402d71bd3d11ecb63ac39f01a',
-  ]],
+  [
+    'mainnet',
+    [
+      '000006cb93385b8b87a545a1cbb6197e6caff600c12cc12fc54250d39c8088fc',
+      '0002d4d2a15def7604688e1878ab681142a7b155cbe52a6b4e031250ae96db0a',
+      '0002ad8d1519daaddc8e1a37b14aac0b045129c01832281fb1c02d873c7abbf9',
+    ],
+  ],
+  [
+    'testnet',
+    [
+      '0000033139d08176d1051fb3a272c3610457f0c7f686afbe0afe3d37f966db85',
+      '00e161a6b0bee1781ea9300680913fb76fd0fac4acab527cd9626cc1514abdc9',
+      '00975897028ceb037307327c953f5e7ad4d3f42402d71bd3d11ecb63ac39f01a',
+    ],
+  ],
 ]);
 
-
-const TX_CACHE_SIZE: number = parseInt(process.env.TX_CACHE_SIZE as string) || 200;
+const TX_CACHE_SIZE: number =
+  parseInt(process.env.TX_CACHE_SIZE as string) || 200;
 
 /**
  * Download and parse a tx by it's id
  *
  * @param txId - the id of the tx to be downloaded
  */
-export const downloadTxFromId = async (txId: string): Promise<FullTx | null> => {
-
+export const downloadTxFromId = async (
+  txId: string
+): Promise<FullTx | null> => {
   const network: string = process.env.NETWORK || 'mainnet';
 
   // Do not download genesis transactions
@@ -79,7 +83,7 @@ export const downloadTxFromId = async (txId: string): Promise<FullTx | null> => 
   }
 
   const txData: RawTxResponse = await downloadTx(txId);
-  const { tx, meta } = txData;
+  const { tx } = txData;
 
   return parseTx(tx);
 };
@@ -91,7 +95,11 @@ export const downloadTxFromId = async (txId: string): Promise<FullTx | null> => 
  * @param txIds - List of transactions to download
  * @param data - Downloaded transactions, used while being called recursively
  */
-export const recursivelyDownloadTx = async (blockId: string, txIds: string[] = [], data = new Map<string, FullTx>()): Promise<Map<string, FullTx>> => {
+export const recursivelyDownloadTx = async (
+  blockId: string,
+  txIds: string[] = [],
+  data = new Map<string, FullTx>()
+): Promise<Map<string, FullTx>> => {
   if (txIds.length === 0) {
     return data;
   }
@@ -128,39 +136,22 @@ export const recursivelyDownloadTx = async (blockId: string, txIds: string[] = [
   }
 
   // check if we have already downloaded the parents
-  const newParents = parsedTx.parents.filter((parent) => {
-    return txIds.indexOf(parent) < 0 &&
+  const newParents = parsedTx.parents.filter(parent => {
+    return (
+      txIds.indexOf(parent) < 0 &&
       /* Removing the current tx from the list of transactions to download: */
       parent !== txId &&
       /* Data works as our return list on the recursion and also as a "seen" list on the BFS.
        * We don't want to download a transaction that is already on our seen list.
        */
       !data.has(parent)
+    );
   });
 
-  const newData = data.set(parsedTx.txId, cleanInvalidOutputs(parsedTx));
+  const newData = data.set(parsedTx.txId, parsedTx);
 
   return recursivelyDownloadTx(blockId, [...txIds, ...newParents], newData);
 };
-
-/**
- * Removes invalid tx outputs from the received tx
- *
- * @param tx - `FullTx` to remove the invalid outputs
- */
-export const cleanInvalidOutputs = (tx: FullTx) => ({
-  ...tx,
-  // Filter outputs that we can't handle (script was unable to be decoded)
-  outputs: tx.outputs.filter((output, index) => {
-    const validDecoded = !isNil(get(output, 'decoded.type'));
-
-    if (!validDecoded) {
-      logger.warn(`Ignoring tx output with index ${index} from tx ${tx.txId} as script couldn't be decoded.`);
-    }
-
-    return validDecoded;
-  }),
-});
 
 /**
  * Prepares a transaction to be sent to the wallet-service `onNewTxRequest`
@@ -178,7 +169,7 @@ export const prepareTx = (tx: FullTx | FullBlock): PreparedTx => {
     token_name: tx.tokenName,
     token_symbol: tx.tokenSymbol,
     height: tx.height,
-    inputs: tx.inputs.map((input) => {
+    inputs: tx.inputs.map(input => {
       const baseInput: PreparedInput = {
         tx_id: input.txId,
         value: input.value,
@@ -197,17 +188,21 @@ export const prepareTx = (tx: FullTx | FullBlock): PreparedTx => {
       }
 
       if (!tx.tokens || tx.tokens.length <= 0) {
-        throw new Error('Input is a token but there are no tokens in the tokens list.');
+        throw new Error(
+          'Input is a token but there are no tokens in the tokens list.'
+        );
       }
 
-      const { uid } = tx.tokens[wallet.getTokenIndex(input.decoded.tokenData) - 1];
+      const { uid } = tx.tokens[
+        wallet.getTokenIndex(input.decoded.tokenData) - 1
+      ];
 
       return {
         ...baseInput,
         token: uid,
       };
     }),
-    outputs: tx.outputs.map((output) => {
+    outputs: tx.outputs.map(output => {
       const baseOutput: PreparedOutput = {
         value: output.value,
         token_data: output.tokenData,
@@ -224,10 +219,18 @@ export const prepareTx = (tx: FullTx | FullBlock): PreparedTx => {
       }
 
       if (!tx.tokens || tx.tokens.length <= 0) {
-        throw new Error('Output is a token but there are no tokens in the tokens list.');
+        throw new Error(
+          'Output is a token but there are no tokens in the tokens list.'
+        );
       }
 
-      const { uid } = tx.tokens[wallet.getTokenIndex(output.decoded.tokenData) - 1];
+      if (!output.decoded || isEmpty(output.decoded) || !output.decoded.type) {
+        return baseOutput;
+      }
+
+      const { uid } = tx.tokens[
+        wallet.getTokenIndex(output.decoded.tokenData) - 1
+      ];
 
       return {
         ...baseOutput,
@@ -253,15 +256,21 @@ export const parseTx = (tx: RawTx): FullTx => {
     version: tx.version as number,
     weight: tx.weight as number,
     timestamp: tx.timestamp as number,
-    tokenName: tx.token_name ? tx.token_name as string : null,
-    tokenSymbol: tx.token_symbol ? tx.token_symbol as string : null,
+    tokenName: tx.token_name ? (tx.token_name as string) : null,
+    tokenSymbol: tx.token_symbol ? (tx.token_symbol as string) : null,
     inputs: tx.inputs.map((input: RawInput) => {
       const typedDecodedScript: DecodedScript = {
         type: input.decoded.type as string,
         address: input.decoded.address as string,
-        timelock: isNumber(input.decoded.timelock) ? input.decoded.timelock as number : null,
-        value: isNumber(input.decoded.value) ? input.decoded.value as number : null,
-        tokenData: isNumber(input.decoded.token_data) ? input.decoded.token_data as number : null,
+        timelock: isNumber(input.decoded.timelock)
+          ? (input.decoded.timelock as number)
+          : null,
+        value: isNumber(input.decoded.value)
+          ? (input.decoded.value as number)
+          : null,
+        tokenData: isNumber(input.decoded.token_data)
+          ? (input.decoded.token_data as number)
+          : null,
       };
       const typedInput: Input = {
         txId: input.tx_id as string,
@@ -274,24 +283,32 @@ export const parseTx = (tx: RawTx): FullTx => {
 
       return typedInput;
     }),
-    outputs: tx.outputs.map((output: RawOutput): Output => {
-      const typedDecodedScript: DecodedScript = {
-        type: output.decoded.type as string,
-        address: output.decoded.address as string,
-        timelock: isNumber(output.decoded.timelock) ? output.decoded.timelock as number : null,
-        value: isNumber(output.decoded.value) ? output.decoded.value as number : null,
-        tokenData: isNumber(output.decoded.token_data) ? output.decoded.token_data as number : null,
-      };
+    outputs: tx.outputs.map(
+      (output: RawOutput): Output => {
+        const typedDecodedScript: DecodedScript = {
+          type: output.decoded.type as string,
+          address: output.decoded.address as string,
+          timelock: isNumber(output.decoded.timelock)
+            ? (output.decoded.timelock as number)
+            : null,
+          value: isNumber(output.decoded.value)
+            ? (output.decoded.value as number)
+            : null,
+          tokenData: isNumber(output.decoded.token_data)
+            ? (output.decoded.token_data as number)
+            : null,
+        };
 
-      const typedOutput: Output = {
-        value: output.value as number,
-        tokenData: output.token_data as number,
-        script: output.script as string,
-        decoded: typedDecodedScript,
-      };
+        const typedOutput: Output = {
+          value: output.value as number,
+          tokenData: output.token_data as number,
+          script: output.script as string,
+          decoded: typedDecodedScript,
+        };
 
-      return typedOutput;
-    }),
+        return typedOutput;
+      }
+    ),
     parents: tx.parents,
     tokens: tx.tokens,
     raw: tx.raw as string,
@@ -307,7 +324,6 @@ export const parseTx = (tx: RawTx): FullTx => {
  * @yields {MempoolEvent}
  */
 export async function* syncLatestMempool(): AsyncGenerator<MempoolEvent> {
-
   logger.info(`Downloading mempool...`);
   let mempoolResp;
   try {
@@ -328,12 +344,12 @@ export async function* syncLatestMempool(): AsyncGenerator<MempoolEvent> {
       yield {
         type: 'error',
         success: false,
-        message: `Failure on transaction ${mempoolResp.transactions[i]} in mempool`,
+        message: `[ALERT] Failure on transaction ${mempoolResp.transactions[i]} in mempool`,
       };
       return;
     }
 
-    const preparedTx: PreparedTx = prepareTx(cleanInvalidOutputs(tx));
+    const preparedTx: PreparedTx = prepareTx(tx);
 
     try {
       const sendTxResponse: ApiResponse = await sendTx(preparedTx);
@@ -345,7 +361,7 @@ export async function* syncLatestMempool(): AsyncGenerator<MempoolEvent> {
       yield {
         type: 'error',
         success: false,
-        message: `Failure on transaction ${preparedTx.tx_id} in mempool`,
+        message: `[ALERT] Failure on transaction ${preparedTx.tx_id} in mempool`,
       };
       return;
     }
@@ -391,9 +407,7 @@ export async function* syncToLatestBlock(): AsyncGenerator<StatusEvent> {
 
   const { meta } = ourBestBlockInFullNode;
 
-  if ((meta.voided_by &&
-       meta.voided_by.length &&
-         meta.voided_by.length > 0)) {
+  if (meta.voided_by && meta.voided_by.length && meta.voided_by.length > 0) {
     yield {
       type: 'reorg',
       success: false,
@@ -407,44 +421,54 @@ export async function* syncToLatestBlock(): AsyncGenerator<StatusEvent> {
     yield {
       type: 'reorg',
       success: false,
-      message: 'Our height is higher than the wallet-service\'s height, we should reorg.',
+      message:
+        "Our height is higher than the wallet-service's height, we should reorg.",
     };
 
     return;
   }
 
-  logger.info(`Downloading ${fullNodeBestBlock.height - ourBestBlock.height} blocks...`);
+  logger.info(
+    `Downloading ${fullNodeBestBlock.height - ourBestBlock.height} blocks...`
+  );
   let success = true;
 
-  blockLoop:
-    for (let i = ourBestBlock.height + 1; i <= fullNodeBestBlock.height; i++) {
+  blockLoop: for (
+    let i = ourBestBlock.height + 1;
+    i <= fullNodeBestBlock.height;
+    i++
+  ) {
     const block: FullBlock = await downloadBlockByHeight(i);
     const preparedBlock: PreparedTx = prepareTx(block);
 
     // Ignore parents[0] because it is a block
-    const blockTxs = [
-      block.parents[1],
-      block.parents[2],
-    ];
+    const blockTxs = [block.parents[1], block.parents[2]];
 
     // Download block transactions
-    const txList: Map<string, FullTx> = await recursivelyDownloadTx(block.txId, blockTxs);
-    const txs: FullTx[] = Array.from(txList.values()).sort((x, y) => x.timestamp - y.timestamp);
+    const txList: Map<string, FullTx> = await recursivelyDownloadTx(
+      block.txId,
+      blockTxs
+    );
+    const txs: FullTx[] = Array.from(txList.values()).sort(
+      (x, y) => x.timestamp - y.timestamp
+    );
 
     // Exclude duplicates:
-    const uniqueTxs: Record<string, FullTx> = txs.reduce((acc: Record<string, FullTx>, tx: FullTx) => {
-      if (tx.txId in acc) {
-        return acc;
-      }
+    const uniqueTxs: Record<string, FullTx> = txs.reduce(
+      (acc: Record<string, FullTx>, tx: FullTx) => {
+        if (tx.txId in acc) {
+          return acc;
+        }
 
-      return {
-        ...acc,
-        [tx.txId]: tx
-      };
-    }, {});
+        return {
+          ...acc,
+          [tx.txId]: tx,
+        };
+      },
+      {}
+    );
 
-    txLoop:
-      for (const key of Object.keys(uniqueTxs)) {
+    for (const key of Object.keys(uniqueTxs)) {
       const preparedTx: PreparedTx = prepareTx({
         ...uniqueTxs[key],
         height: block.height, // this tx is confirmed by the current block on the loop, we must send its height
@@ -508,12 +532,12 @@ export class LRU {
   max: number;
   cache: Map<string, any>;
 
-  constructor (max: number = 10) {
+  constructor(max: number = 10) {
     this.max = max;
     this.cache = new Map();
   }
 
-  get (txId: string): any {
+  get(txId: string): any {
     const transaction = this.cache.get(txId);
 
     if (transaction) {
@@ -525,7 +549,7 @@ export class LRU {
     return transaction;
   }
 
-  set (txId: string, transaction: any): void {
+  set(txId: string, transaction: any): void {
     if (this.cache.has(txId)) {
       // Refresh it in the map
       this.cache.delete(txId);
@@ -539,7 +563,7 @@ export class LRU {
     this.cache.set(txId, transaction);
   }
 
-  first (): string {
+  first(): string {
     return this.cache.keys().next().value;
   }
 }
