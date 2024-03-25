@@ -6165,14 +6165,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.6.2":
-  version: 1.6.2
-  resolution: "axios@npm:1.6.2"
+"axios@npm:^0.28.0":
+  version: 0.28.0
+  resolution: "axios@npm:0.28.0"
   dependencies:
     follow-redirects: "npm:^1.15.0"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10/612bc93f8f738a518e7c5f9de9cc782bcd36aac6bae279160ef6a10260378e21c1786520eab3336898e3d66e0839ebdf739f327fb6d0431baa4d3235703a7652
+  checksum: 10/3bc408a75530cdccfa2537a8713f66d4b84cb1d93a31b59c0f1a247ffce955d8a739862365135b687bcef83763b8c3a42330dc3628b406c9ffca320bce608f0a
   languageName: node
   linkType: hard
 
@@ -14804,7 +14804,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^6.7.3"
     assert: "npm:^2.1.0"
     aws-sdk: "npm:^2.1454.0"
-    axios: "npm:^1.6.2"
+    axios: "npm:^0.28.0"
     dotenv: "npm:^8.2.0"
     eslint-config-airbnb-base: "npm:^15.0.0"
     eslint-plugin-jest: "npm:^27.4.0"
@@ -15687,7 +15687,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^6.7.4"
     "@typescript-eslint/parser": "npm:^3.3.0"
     aws-lambda: "npm:^1.0.7"
-    axios: "npm:^0.21.1"
+    axios: "npm:^0.28.0"
     bip32: "npm:^3.0.1"
     bitcoinjs-lib: "npm:^6.0.1"
     bitcoinjs-message: "npm:^2.2.0"
