@@ -27,7 +27,7 @@
     "bitcore-mnemonic": "8.25.10",
     "firebase-admin": "^11.3.0",
     "joi": "^17.4.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "lodash": "^4.17.21",
     "mysql": "^2.18.1",
     "mysql2": "^2.2.5",
