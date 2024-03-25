@@ -10940,9 +10940,9 @@ __metadata:
   linkType: hard
 
 "jose@npm:^4.10.4, jose@npm:^4.14.6":
-  version: 4.15.1
-  resolution: "jose@npm:4.15.1"
-  checksum: 10/ae2ae10c5ac50bf7d0504eba82272339af0712b25abe99465448339df512decf0e5b2e4b8e7f6d23dc3b615bb0a66ad0a033cdf1a66132f29284cafd22f4fdb9
+  version: 4.15.5
+  resolution: "jose@npm:4.15.5"
+  checksum: 10/17944fcc0d9afa07387eef23127c30ecfcc77eafddc4b4f1a349a8eee0536bee9b08ecd745406eaa0af65d531f738b94d2467976479cbfe8b3b60f8fc8082b8d
   languageName: node
   linkType: hard
 
