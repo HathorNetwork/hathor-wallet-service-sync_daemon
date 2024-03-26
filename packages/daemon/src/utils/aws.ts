@@ -61,8 +61,17 @@ export const invokeOnTxPushNotificationRequestedLambda = async (walletBalanceVal
  * @param messageBody - A string with the message body
  * @param queueUrl - The queue URL
  */
-export const sendMessageSQS = async (messageBody: string, queueUrl: string, messageAttributes?: Record<string, MessageAttributeValue>): Promise<SendMessageCommandOutput> => {
-  const client = new SQSClient({});
+export const sendMessageSQS = async (messageBody: string, queueUrl: string, messageAttributes?: Record<string, MessageAttributeValue>, region?: string): Promise<SendMessageCommandOutput> => {
+  const { AWS_REGION } = getConfig();
+
+  if (!region) {
+    region = AWS_REGION;
+  }
+
+  const client = new SQSClient({
+    endpoint: queueUrl,
+    region,
+  });
   const command = new SendMessageCommand({
     QueueUrl: queueUrl,
     MessageBody: messageBody,

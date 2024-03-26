@@ -36,10 +36,10 @@ custom:
     topics: # SNS Topics to send alerts to
       major:
         alarm:
-          topic: arn:aws:sns:eu-central-1:${self:provider.environment.ACCOUNT_ID}:opsgenie-cloudwatch-integration-production-major
+          topic: arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:opsgenie-cloudwatch-integration-production-major
       minor:
         alarm:
-          topic: arn:aws:sns:eu-central-1:${self:provider.environment.ACCOUNT_ID}:opsgenie-cloudwatch-integration-production-minor
+          topic: arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:opsgenie-cloudwatch-integration-production-minor
     definitions: # Definition of alarms
       majorFunctionErrors:
         description: "Too many errors in hathor-wallet-service. Runbook: https://github.com/HathorNetwork/ops-tools/blob/master/docs/runbooks/wallet-service/errors-in-logs.md"
@@ -120,10 +120,16 @@ resources:
       Properties:
         QueueName:
             WalletServiceNewTxQueue_${self:custom.stage}
+    WalletServiceLoadAsyncFailedTopic:
+        Type: "AWS::SNS::Topic"
+        Properties:
+          DisplayName: 'Messages published when the loadWalletAsync lambda fails'
+          TopicName: WalletServiceLoadAsyncFailed_${self:custom.stage}
 
 provider:
   name: aws
   runtime: nodejs18.x
+  region: ${opt:region, 'eu-central-1'}
   # In MB. This is the memory allocated for the Lambdas, they cannot use more than this
   # and will break if they try.
   memorySize: 256
@@ -239,12 +245,40 @@ functions:
           - lambda:InvokeFunction
           - lambda:InvokeAsync
         Resource:
-          arn:aws:lambda:eu-central-1:${self:provider.environment.ACCOUNT_ID}:function:hathor-explorer-service-${self:custom.explorerServiceStage}-create_or_update_dag_metadata
+          arn:aws:lambda:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:function:hathor-explorer-service-${self:custom.explorerServiceStage}-create_or_update_dag_metadata
   loadWalletAsync:
     handler: src/api/wallet.loadWallet
+    # This lambda is currently running out of memory when wallets with a big
+    # number of transactions (> 300k) is being loaded. I chose 1024 because the
+    # average memory usage of the largest test wallet we have is 800mb.
+    memorySize: 1024
+    timeout: 600 # 10 minutes should be enough for most wallets
+    onError: arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:WalletServiceLoadAsyncFailed_${self:custom.stage}
     warmup:
       walletWarmer:
         enabled: false
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - SNS:Publish
+        Resource:
+          arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:WalletServiceLoadAsyncFailed_${self:custom.stage}
+  handleLoadWalletFailed:
+    handler: src/api/wallet.loadWalletFailed
+    events:
+      - sns: arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:WalletServiceLoadAsyncFailed_${self:custom.stage}
+    warmup:
+      walletWarmer:
+        enabled: false
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: hathor-wallet-service-${self:custom.stage}-handleLoadFailed-snsRole
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - SNS:Subscribe
+          - SNS:Unsubscribe
+        Resource:
+          arn:aws:sns:${self:provider.region}:${self:provider.environment.ACCOUNT_ID}:WalletServiceLoadAsyncFailed_${self:custom.stage}
   loadWalletApi:
     role: arn:aws:iam::${self:provider.environment.ACCOUNT_ID}:role/WalletServiceLoadWalletLambda
     handler: src/api/wallet.load

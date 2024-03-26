@@ -28,6 +28,7 @@ try {
     'FIREBASE_TOKEN_URI',
     'FIREBASE_AUTH_PROVIDER_X509_CERT_URL',
     'FIREBASE_CLIENT_X509_CERT_URL',
+    'AWS_REGION',
   ]);
 } catch (e) {
   logger.error(e);
@@ -49,6 +50,7 @@ export enum FunctionName {
 }
 
 const STAGE = process.env.STAGE;
+const AWS_REGION = process.env.AWS_REGION;
 const WALLET_SERVICE_LAMBDA_ENDPOINT = process.env.WALLET_SERVICE_LAMBDA_ENDPOINT;
 const SEND_NOTIFICATION_FUNCTION_NAME = buildFunctionName(FunctionName.SEND_NOTIFICATION_TO_DEVICE);
 const ON_TX_PUSH_NOTIFICATION_REQUESTED_FUNCTION_NAME = buildFunctionName(FunctionName.ON_TX_PUSH_NOTIFICATION_REQUESTED);
@@ -228,7 +230,7 @@ export class PushNotificationUtils {
 
     const client = new LambdaClient({
       endpoint: WALLET_SERVICE_LAMBDA_ENDPOINT,
-      region: 'local',
+      region: AWS_REGION,
     });
 
     const command = new InvokeCommand({
@@ -263,7 +265,7 @@ export class PushNotificationUtils {
 
     const client = new LambdaClient({
       endpoint: WALLET_SERVICE_LAMBDA_ENDPOINT,
-      region: 'local',
+      region: AWS_REGION,
     });
 
     const command = new InvokeCommand({

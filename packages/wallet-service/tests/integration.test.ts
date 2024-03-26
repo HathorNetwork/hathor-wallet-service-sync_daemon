@@ -1,9 +1,10 @@
+import { mockedAddAlert } from '@tests/utils/alerting.utils.mock';
 import { initFirebaseAdminMock } from '@tests/utils/firebase-admin.mock';
 import eventTemplate from '@events/eventTemplate.json';
-import { loadWallet } from '@src/api/wallet';
+import { loadWallet, loadWalletFailed } from '@src/api/wallet';
 import { createWallet, getMinersList } from '@src/db';
 import * as txProcessor from '@src/txProcessor';
-import { Transaction, WalletStatus, TxInput } from '@src/types';
+import { Transaction, WalletStatus, TxInput, Severity } from '@src/types';
 import { closeDbConnection, getDbConnection, getUnixTimestamp, getWalletId } from '@src/utils';
 import {
   ADDRESSES,
@@ -21,6 +22,7 @@ import {
   createInput,
   addToUtxoTable,
 } from '@tests/utils';
+import { SNSEvent } from 'aws-lambda';
 
 const mysql = getDbConnection();
 
@@ -132,6 +134,14 @@ beforeAll(async () => {
   jest.resetModules();
   process.env = { ...OLD_ENV };
   process.env.BLOCK_REWARD_LOCK = '1';
+
+  const actualUtils = jest.requireActual('@src/utils');
+  jest.mock('@src/utils', () => {
+    return {
+      ...actualUtils,
+      assertEnvVariablesExistence: jest.fn()
+    }
+  });
 });
 
 afterAll(async () => {
@@ -176,6 +186,64 @@ test('receive blocks and txs and then start wallet', async () => {
   await loadWallet({ xpubkey: XPUBKEY, maxGap }, null, null);
 
   await checkAfterReceivingTx2(true);
+}, 60000);
+
+test('load wallet, and simulate DLQ event', async () => {
+  /*
+   * create wallet
+   */
+  await createWallet(mysql, walletId, XPUBKEY, AUTH_XPUBKEY, maxGap);
+
+  const REQUEST_ID = 'b45d912a-d392-4680-babf-c0caa6208a5f';
+
+  const event: SNSEvent = {
+      'Records': [
+          {
+              'EventSource': 'aws:sns',
+              'EventVersion': '1.0',
+              'EventSubscriptionArn': 'arn:aws:sns:eu-central-1:769498303037:',
+              'Sns': {
+                  'Type': 'Notification',
+                  'MessageId': '1',
+                  'TopicArn': 'arn',
+                  'Subject': null,
+                  'Message': `{\"xpubkey\":\"${XPUBKEY}\",\"maxGap\":20}`,
+                  'Timestamp': '2024-03-19T15:12:24.741Z',
+                  'SignatureVersion': '1',
+                  'Signature': '',
+                  'SigningCertUrl': '',
+                  'UnsubscribeUrl': '',
+                  'MessageAttributes': {
+                      'RequestID': {
+                          'Type': 'String',
+                          'Value': REQUEST_ID,
+                      },
+                      'ErrorMessage': {
+                          'Type': "String",
+                          'Value': 'The lambda exploded',
+                      },
+                  },
+              },
+          },
+      ]
+  };
+
+  await expect(checkWalletTable(mysql, 1, walletId, WalletStatus.CREATING)).resolves.toBe(true);
+
+  await loadWalletFailed(event, null, null);
+
+  await expect(checkWalletTable(mysql, 1, walletId, WalletStatus.ERROR)).resolves.toBe(true);
+
+  expect(mockedAddAlert).toHaveBeenCalledWith(
+    'A wallet failed to load in the wallet-service',
+    `The wallet with id ${walletId} failed to load on the wallet-service. Please check the logs.`,
+    Severity.MINOR,
+    {
+      walletId,
+      RequestID: REQUEST_ID,
+      ErrorMessage: 'The lambda exploded',
+    },
+  );
 }, 60000);
 
 // eslint-disable-next-line jest/prefer-expect-assertions, jest/expect-expect

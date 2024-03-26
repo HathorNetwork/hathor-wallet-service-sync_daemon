@@ -85,7 +85,7 @@ export class NftUtils {
   static async _updateMetadata(nftUid: string, metadata: Record<string, unknown>): Promise<unknown> {
     const client = new LambdaClient({
       endpoint: process.env.EXPLORER_SERVICE_LAMBDA_ENDPOINT,
-      region: 'local',
+      region: process.env.AWS_REGION,
     });
    const command = new InvokeCommand({
       FunctionName: `hathor-explorer-service-${process.env.EXPLORER_SERVICE_STAGE}-create_or_update_dag_metadata`,
@@ -141,7 +141,7 @@ export class NftUtils {
   static async invokeNftHandlerLambda(txId: string): Promise<void> {
     const client = new LambdaClient({
       endpoint: process.env.WALLET_SERVICE_LAMBDA_ENDPOINT,
-      region: 'local',
+      region: process.env.AWS_REGION,
     });
     // invoke lambda asynchronously to metadata update
    const command = new InvokeCommand({

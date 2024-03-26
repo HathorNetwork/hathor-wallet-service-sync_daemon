@@ -32,6 +32,7 @@ describe('PushNotificationUtils', () => {
       FIREBASE_AUTH_PROVIDER_X509_CERT_URL: 'https://www.googleapis.com/oauth2/v1/certs',
       FIREBASE_CLIENT_X509_CERT_URL: 'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk.iam.gserviceaccount.com',
       PUSH_ALLOWED_PROVIDERS: 'android,ios',
+      AWS_REGION: 'local',
     };
     initFirebaseAdminMock.mockReset();
     isFirebaseInitializedMock.mockReset();

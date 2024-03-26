@@ -10,17 +10,12 @@ This document describes the main features we are using and how to interact with 
 
 ## Feature toggles
 
-We have a list of [feature toggles](https://docs.getunleash.io/advanced/feature_toggle_types) that are queried by the wallets:
+We have two [feature toggles](https://docs.getunleash.io/advanced/feature_toggle_types) that are queried by the wallets:
 
-* `wallet-service-mobile-android-mainnet.rollout`
-* `wallet-service-mobile-android-testnet.rollout`
-* `wallet-service-mobile-ios-mainnet.rollout`
-* `wallet-service-mobile-ios-testnet.rollout`
-* `wallet-service-wallet-desktop-mainnet.rollout`
-* `wallet-service-wallet-desktop-testnet.rollout`
+* `wallet-service-mobile.rollout`
+* `wallet-service-desktop.rollout`
 
 Those feature toggles are `Release` toggles and represent each wallet and the network they are connected to, e.g. when the mobile wallet on iOS on the `mainnet` wants to know wether to use or not the wallet-service facade, it will request the `wallet-service-mobile-ios-mainnet.rollout` feature-flag that will answer "Yes" or "No" based on a list of strategies.
-
 
 ## Stategies
 
@@ -39,7 +34,7 @@ Activates for users with a `userId` defined in the `userIds` list. We are curren
 
 1. [Gradual rollout](https://docs.getunleash.io/user_guide/activation_strategy#gradual-rollout)
 
-This is a `percentage` based strategy, it will answer the feature toggles depending on the percentage of users that already received a positive or negative answer. 
+This is a `percentage` based strategy, it will answer the feature toggles depending on the percentage of users that already received a positive or negative answer.
 
 For [stickness](https://docs.getunleash.io/advanced/stickiness), we are currently using `userId` on all the feature toggles, so if an user receives a positive response to the feature toggle request, it will continue receiving a positive response on consecutive requests
 

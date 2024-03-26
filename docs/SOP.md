@@ -4,14 +4,8 @@
 
 The deployment is partially automated with CodeBuild and CodePipeline in AWS.
 
-It's triggered when commits are made to `dev` or `master` branches, and when tags with names like `v*` are created.
-
-Each case deploys to a different environment:
-- `dev` branch -> `dev-testnet` environment
-- `master` branch -> `testnet` environment
-- `v*` tags -> `mainnet` environment
-
-All of them require manual approval to proceed. You should keep an eye in the `#wallet-service-deploys` channel in Slack, the approval requests are sent there.
+Please refer to the wallet-service's release guide for a more in-depth expalanation of which branches/tags trigger builds:
+https://github.com/HathorNetwork/ops-tools/blob/1092092ba840c7492436ee092ef2d0a274006c5b/docs/release-guides/wallet-service.md
 
 If you need to know the exact steps that take place during deployment, check [this document](2021-07-29-infrastructure-design.md#how-the-process-works)
 
@@ -30,7 +24,7 @@ Let's say we want to add the `ENV_VAR_1` env var.
 
 First step would be to add it to the [serverless.yml](https://github.com/HathorNetwork/hathor-wallet-service/blob/master/serverless.yml) file, under `provider.environment`.
 
-Then, you need to add it in [.codebuild/buildspec.yml](https://github.com/HathorNetwork/hathor-wallet-service/blob/master/.codebuild/buildspec.yml). If it's not a secret, just add it under `env.variables`. 
+Then, you need to add it in [.codebuild/buildspec.yml](https://github.com/HathorNetwork/hathor-wallet-service/blob/master/.codebuild/buildspec.yml). If it's not a secret, just add it under `env.variables`.
 
 If it's a secret, you'll need to add it to `env.secrets-manager`, and one for each environment we have (`dev`, `testnet` and `mainnet`). You should use the same name for it as you did in the `serverless.yml` file, but adding a prefix indicating the name of the environment. The value should be the path to a key in AWS Secrets Manager. Ask some account admin for help on adding the secrets there and providing you with the key path.
 
