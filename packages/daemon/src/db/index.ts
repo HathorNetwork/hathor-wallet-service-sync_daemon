@@ -38,6 +38,8 @@ import {
 import { walletUtils } from '@hathor/wallet-lib';
 import getConfig from '../config';
 
+console.log(walletUtils);
+
 let pool: Pool;
 
 /**
@@ -161,7 +163,7 @@ export const addUtxos = async (
  * @param inputs - The transaction inputs
  * @param txId - The transaction that spent these utxos
  */
-export const updateTxOutputSpentBy = async (mysql: any, inputs: TxInput[], txId: string): Promise<void> => { 
+export const updateTxOutputSpentBy = async (mysql: any, inputs: TxInput[], txId: string): Promise<void> => {
   const entries = inputs.map((input) => [input.tx_id, input.index]);
   // entries might be empty if there are no inputs
   if (entries.length) {
@@ -241,7 +243,7 @@ export const getTxOutputsFromTx = async (
 
  * @returns A list of tx outputs
  */
-export const getTxOutputs = async ( 
+export const getTxOutputs = async (
   mysql: any,
   inputs: {txId: string, index: number}[],
 ): Promise<DbTxOutput[]> => {
@@ -1048,6 +1050,7 @@ export const generateAddresses = async (mysql: MysqlConnection, xpubkey: string,
   let lastUsedAddressIndex = -1;
   do {
     const { NETWORK } = getConfig();
+    console.debug('WALLET UTILS: ', walletUtils);
     const addrMap = walletUtils.getAddresses(derivedXpub, highestCheckedIndex + 1, maxGap, NETWORK);
     allAddresses.push(...Object.keys(addrMap));
 

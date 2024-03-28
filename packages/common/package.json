@@ -1,0 +1,12 @@
+{
+  "name": "@wallet-service/common",
+  "packageManager": "yarn@4.1.0",
+  "peerDependencies": {
+    "@aws-sdk/client-lambda": "3.465.0",
+    "@hathor/wallet-lib": "1.4.1",
+    "winston": "3.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30"
+  }
+}

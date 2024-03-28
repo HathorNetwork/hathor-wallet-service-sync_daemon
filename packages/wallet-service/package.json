@@ -11,9 +11,6 @@
   "author": "Hathor Labs",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-apigatewaymanagementapi": "^3.465.0",
-    "@aws-sdk/client-lambda": "^3.465.0",
-    "@aws-sdk/client-sqs": "^3.465.0",
     "@hathor/healthcheck-lib": "^0.1.0",
     "@hathor/wallet-lib": "^0.39.0",
     "@middy/core": "^2.5.7",
@@ -36,8 +33,7 @@
     "serverless-mysql": "^1.5.4",
     "source-map-support": "^0.5.19",
     "tiny-secp256k1": "^2.2.1",
-    "uuid": "^8.3.0",
-    "winston": "^3.7.2"
+    "uuid": "^8.3.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.95",
@@ -72,5 +68,11 @@
     "typescript-eslint": "0.0.1-alpha.0",
     "webpack": "^5.88.2",
     "webpack-node-externals": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "3.465.0",
+    "@aws-sdk/client-lambda": "3.465.0",
+    "@aws-sdk/client-sqs": "3.465.0",
+    "winston": "^3.7.2"
   }
 }
