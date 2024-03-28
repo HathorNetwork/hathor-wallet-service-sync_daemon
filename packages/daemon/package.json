@@ -45,7 +45,8 @@
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.474.0",
     "@aws-sdk/client-sqs": "^3.474.0",
-    "@hathor/wallet-lib": "^0.39.0",
+    "@hathor/wallet-lib": "0.39.0",
+    "@wallet-service/common": "workspace:^",
     "assert": "^2.1.0",
     "aws-sdk": "^2.1454.0",
     "axios": "^1.6.2",
